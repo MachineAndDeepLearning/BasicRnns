@@ -1,5 +1,7 @@
 import numpy as np
 import string
+import os
+from nltk import pos_tag, word_tokenize
 
 
 def init_weight(Mi, Mo):
@@ -65,3 +67,48 @@ def get_robert_frost():
 
 			sentences.append(sentence)
 	return sentences, word2idx
+
+
+def get_tags(s):
+	tuples = pos_tag(word_tokenize(s))
+	return [y for x, y in tuples]
+
+
+def get_poetry_classifier_data(samples_per_class, load_cached=True, save_cached=True):
+	datafile = 'poetry_classifier_data.npz'
+	if load_cached and os.path.exists(datafile):
+		npz = np.load(datafile)
+		X = npz['arr_0']
+		Y = npz['arr_1']
+		V = int(npz['arr_2'])
+		return X, Y, V
+
+	word2idx = {}
+	current_idx = 0
+	X = []
+	Y = []
+	for fn, label in zip(('Data/edgar_allan_poe.txt', 'Data/robert_frost.txt'), (0, 1)):
+		count = 0
+		for line in open(fn, encoding='utf-8'):
+			line = line.rstrip()
+			if line:
+				print(line)
+				# tokens = remove_punctuation(line.lower()).split()
+				tokens = get_tags(line)
+				if len(tokens) > 1:
+					# scan doesn't work nice here, technically could fix...
+					for token in tokens:
+						if token not in word2idx:
+							word2idx[token] = current_idx
+							current_idx += 1
+					sequence = np.array([word2idx[w] for w in tokens])
+					X.append(sequence)
+					Y.append(label)
+					count += 1
+					print(count)
+					# quit early because the tokenizer is very slow
+					if count >= samples_per_class:
+						break
+	if save_cached:
+		np.savez(datafile, X, Y, current_idx)
+	return X, Y, current_idx
