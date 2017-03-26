@@ -1,5 +1,6 @@
 # ignore data files
-Data/MNIST
+Data/wiki
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
